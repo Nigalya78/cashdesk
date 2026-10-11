@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent font size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 text-sm;
+    /* Prevent pull-to-refresh interfering with scroll */
+    overscroll-behavior-y: contain;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  /* Remove tap highlight on mobile */
+  * { -webkit-tap-highlight-color: transparent; }
+
+  /* Remove number input spinners */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type='number'] { -moz-appearance: textfield; }
+
+  /* CRITICAL: font-size >= 16px on inputs prevents iOS auto-zoom on focus */
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+
+  /* ─── Layout ─────────────────────────────────────────────────────────────── */
+  .page-shell   { @apply flex-1 flex flex-col min-h-0 overflow-y-auto; }
+  .page-content { @apply p-4 space-y-4 flex-1; }
+
+  /* ─── Cards ──────────────────────────────────────────────────────────────── */
+  .card        { @apply bg-white rounded-xl border border-gray-200; }
+  .card-padded { @apply card p-4; }
+  .stat-card   { @apply card p-4 flex items-center gap-3.5; }
+
+  /* ─── Buttons — min 44px touch target ───────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 font-medium rounded-lg
+           transition-colors duration-150 select-none whitespace-nowrap
+           disabled:opacity-40 disabled:pointer-events-none
+           min-h-[44px] px-4;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn-sm   { @apply btn text-sm min-h-[40px] px-3; }
+  .btn-md   { @apply btn text-sm; }
+  .btn-lg   { @apply btn text-base font-semibold; }
+
+  .btn-primary   { @apply bg-blue-600 active:bg-blue-800 text-white; }
+  .btn-secondary { @apply bg-white active:bg-gray-100 text-gray-700 border border-gray-300; }
+  .btn-danger    { @apply bg-red-600 active:bg-red-800 text-white; }
+  .btn-ghost     { @apply active:bg-gray-100 text-gray-600; }
+
+  /* ─── Inputs — 16px font prevents iOS zoom ───────────────────────────────── */
+  .input {
+    @apply w-full border border-gray-300 rounded-xl px-4 bg-white
+           text-gray-900 placeholder:text-gray-400
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+           disabled:bg-gray-50 disabled:text-gray-500;
+    font-size: 16px;          /* prevents iOS zoom */
+    line-height: 1.5;
+    min-height: 48px;         /* comfortable touch target */
+    transition: box-shadow 0.15s;
+  }
+  .input-field { @apply input; }
+
+  /* ─── Badges ─────────────────────────────────────────────────────────────── */
+  .badge           { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium; }
+  .badge-green     { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70; }
+  .badge-gray      { @apply badge bg-gray-100   text-gray-600   ring-1 ring-gray-200; }
+  .badge-red       { @apply badge bg-red-50     text-red-600    ring-1 ring-red-200/70; }
+  .badge-blue      { @apply badge bg-blue-50    text-blue-700   ring-1 ring-blue-200/70; }
+  .badge-active    { @apply badge-green; }
+  .badge-completed { @apply badge-gray;  }
+  .badge-inactive  { @apply badge-red;   }
+
+  /* ─── Table ──────────────────────────────────────────────────────────────── */
+  .table-wrap { @apply card overflow-hidden overflow-x-auto; }
+  .th  { @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50 border-b border-gray-200 whitespace-nowrap; }
+  .td  { @apply px-4 py-3 text-sm text-gray-700 whitespace-nowrap; }
+  .table-th { @apply th; }
+  .table-td { @apply td; }
+
+  /* ─── Page header ────────────────────────────────────────────────────────── */
+  .topbar {
+    @apply bg-white border-b border-gray-200 px-4 py-3
+           flex items-center justify-between flex-shrink-0 sticky top-0 z-10;
+  }
+
+  /* ─── Section labels ─────────────────────────────────────────────────────── */
+  .section-title {
+    @apply text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3;
+  }
+
+  /* ─── Spinner ────────────────────────────────────────────────────────────── */
+  .spinner    { @apply inline-block w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin flex-shrink-0; }
+  .spinner-lg { @apply spinner !w-7 !h-7; }
+
+  /* ─── Divider ────────────────────────────────────────────────────────────── */
+  .divider { @apply border-t border-gray-100 my-3; }
+
+  /* ─── Cashier full-width buttons — large touch targets ──────────────────── */
+  .c-btn {
+    @apply w-full flex items-center justify-center gap-2 font-semibold
+           rounded-xl transition-colors duration-150
+           disabled:opacity-40 disabled:pointer-events-none;
+    font-size: 16px;
+    min-height: 52px;         /* comfortable for thumbs */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .c-btn-primary        { @apply c-btn bg-blue-600 active:bg-blue-800 text-white; }
+  .c-btn-secondary      { @apply c-btn bg-white active:bg-gray-100 text-gray-700 border border-gray-200; }
+  .c-btn-danger         { @apply c-btn bg-red-600 active:bg-red-800 text-white; }
+  .c-btn-outline-danger { @apply c-btn bg-white active:bg-red-50 text-red-600 border border-red-200; }
+}

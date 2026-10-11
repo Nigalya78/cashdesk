@@ -35,27 +35,37 @@ export default function MyDataScreen() {
   const [detailMap,  setDetailMap]  = useState<Record<string, ShiftDetail>>({});
   const [loadingId,  setLoadingId]  = useState<string | null>(null);
 
-  function onFromChange(_: DateTimePickerEvent, selected?: Date) {
-    setShowFrom(false);
-    if (selected) setFromDate(selected);
-  }
-
-  function onToChange(_: DateTimePickerEvent, selected?: Date) {
-    setShowTo(false);
-    if (selected) setToDate(selected);
-  }
-
-  async function handleView() {
-    const from = toDateStr(fromDate);
-    const to   = toDateStr(toDate);
-    if (from > to) { Alert.alert('Invalid', 'From date must be on or before To date.'); return; }
+  async function fetchShifts(from: Date, to: Date) {
+    const fromStr = toDateStr(from);
+    const toStr   = toDateStr(to);
+    if (fromStr > toStr) return;
     setLoading(true);
     try {
-      const data = await getMyShifts(from, to);
+      const data = await getMyShifts(fromStr, toStr);
       setShifts(data); setHasLoaded(true); setExpandedId(null);
     } catch (err) {
       Alert.alert('Error', getApiErrorMessage(err));
     } finally { setLoading(false); }
+  }
+
+  function onFromChange(_: DateTimePickerEvent, selected?: Date) {
+    setShowFrom(false);
+    if (selected) {
+      setFromDate(selected);
+      fetchShifts(selected, toDate);
+    }
+  }
+
+  function onToChange(_: DateTimePickerEvent, selected?: Date) {
+    setShowTo(false);
+    if (selected) {
+      setToDate(selected);
+      fetchShifts(fromDate, selected);
+    }
+  }
+
+  async function handleView() {
+    fetchShifts(fromDate, toDate);
   }
 
   async function toggleShift(shiftId: string) {

@@ -1,0 +1,98 @@
+import api from './api';
+import { ApiResponse, Shift, Entry, CashOut } from '../types';
+
+// ─── Shifts ───────────────────────────────────────────────────────────────────
+
+export async function openShift(): Promise<Shift> {
+  const res = await api.post<ApiResponse<Shift>>('/cashier/shifts');
+  return res.data.data!;
+}
+
+export async function getActiveShift(): Promise<Shift | null> {
+  try {
+    const res = await api.get<ApiResponse<Shift>>('/cashier/shifts/active');
+    return res.data.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateCashIn(shiftId: string, amount: number): Promise<Shift> {
+  const res = await api.patch<ApiResponse<Shift>>('/cashier/shifts/cash-in', {
+    shift_id: shiftId, amount,
+  });
+  return res.data.data!;
+}
+
+export async function endShift(shiftId: string): Promise<Shift> {
+  const res = await api.patch<ApiResponse<Shift>>('/cashier/shifts/end', { shift_id: shiftId });
+  return res.data.data!;
+}
+
+export async function getMyShifts(fromDate?: string, toDate?: string): Promise<Shift[]> {
+  const params: Record<string, string> = {};
+  if (fromDate) params.from_date = fromDate;
+  if (toDate)   params.to_date   = toDate;
+  const res = await api.get<ApiResponse<Shift[]>>('/cashier/shifts', { params });
+  return res.data.data ?? [];
+}
+
+// ─── Entries ──────────────────────────────────────────────────────────────────
+
+export interface DenomInput { denomination: number; quantity: number; }
+
+export async function createEntry(
+  shiftId: string, entryName: string,
+  denominations: DenomInput[], cardAmount: number,
+): Promise<Entry> {
+  const res = await api.post<ApiResponse<Entry>>('/cashier/entries', {
+    shift_id: shiftId, entry_name: entryName, denominations, card_amount: cardAmount,
+  });
+  return res.data.data!;
+}
+
+export async function updateEntry(
+  entryId: string, entryName: string,
+  denominations: DenomInput[], cardAmount: number,
+): Promise<Entry> {
+  const res = await api.put<ApiResponse<Entry>>(`/cashier/entries/${entryId}`, {
+    entry_name: entryName, denominations, card_amount: cardAmount,
+  });
+  return res.data.data!;
+}
+
+export async function deleteEntry(entryId: string): Promise<void> {
+  await api.delete(`/cashier/entries/${entryId}`);
+}
+
+export async function getShiftEntries(shiftId: string): Promise<Entry[]> {
+  const res = await api.get<ApiResponse<Entry[]>>(`/cashier/shifts/${shiftId}/entries`);
+  return res.data.data ?? [];
+}
+
+// ─── Cash Outs ────────────────────────────────────────────────────────────────
+
+export async function createCashOut(
+  shiftId: string, amount: number, note: string,
+): Promise<CashOut> {
+  const res = await api.post<ApiResponse<CashOut>>('/cashier/cash-outs', {
+    shift_id: shiftId, amount, note,
+  });
+  return res.data.data!;
+}
+
+export async function updateCashOut(
+  cashOutId: string, amount: number, note: string,
+): Promise<CashOut> {
+  const res = await api.put<ApiResponse<CashOut>>(`/cashier/cash-outs/${cashOutId}`, { amount, note });
+  return res.data.data!;
+}
+
+export async function deleteCashOut(cashOutId: string): Promise<void> {
+  await api.delete(`/cashier/cash-outs/${cashOutId}`);
+}
+
+export async function getShiftCashOuts(shiftId: string): Promise<CashOut[]> {
+  const res = await api.get<ApiResponse<CashOut[]>>(`/cashier/shifts/${shiftId}/cash-outs`);
+  return res.data.data ?? [];
+}
