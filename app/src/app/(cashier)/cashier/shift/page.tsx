@@ -77,18 +77,23 @@ export default function ShiftPage() {
 
   // ── Load shift + entries + cash outs ───────────────────────────────────────
   const loadAll = useCallback(async () => {
-    const s = await getActiveShift();
-    if (!s) { router.push('/login'); return; }
-    setShift(s);
-    setCashInAmount(s.opening_cash_in > 0 ? String(s.opening_cash_in) : '');
-    setLoading(false);
+    try {
+      const s = await getActiveShift();
+      if (!s) { router.push('/login'); return; }
+      setShift(s);
+      setCashInAmount(s.opening_cash_in !== null && s.opening_cash_in !== undefined ? String(s.opening_cash_in) : '');
+      setLoading(false);
 
-    const [ent, outs] = await Promise.all([
-      getShiftEntries(s.id),
-      getShiftCashOuts(s.id),
-    ]);
-    setEntries(ent);
-    setCashOuts(outs);
+      const [ent, outs] = await Promise.all([
+        getShiftEntries(s.id),
+        getShiftCashOuts(s.id),
+      ]);
+      setEntries(ent);
+      setCashOuts(outs);
+    } catch (err) {
+      setLoading(false);
+      toast.error(getApiErrorMessage(err));
+    }
   }, [router]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -273,21 +278,45 @@ export default function ShiftPage() {
       <div className="flex-1 max-w-lg mx-auto w-full px-4 py-4 pb-10 space-y-4"
            style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
 
-        {/* ── Shift header ────────────────────────────────────────────── */}
-        <div>
-          <p className="text-base font-semibold text-gray-900">
-            {getGreeting(shift?.cashier_name ?? '')}
-          </p>
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className="badge-green flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              Shift Active
-            </span>
-            <span className="text-xs text-gray-400 flex items-center gap-1">
-              <IconClock size={11} className="text-gray-300" />
-              {formatDate(shift?.shift_date ?? '')} · Started {formatTime(shift?.login_time)}
-            </span>
+        {/* Shift ended banner */}
+        {!isActive && shift && (
+          <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <IconAlertTriangle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800 leading-relaxed">
+              This shift has ended. You can view entries below but cannot make changes.
+            </p>
           </div>
+        )}
+
+        {/* ── Shift header ────────────────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-base font-semibold text-gray-900">
+              {getGreeting(shift?.cashier_name ?? '')}
+            </p>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="badge-green flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                {isActive ? 'Shift Active' : 'Shift Ended'}
+              </span>
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <IconClock size={11} className="text-gray-300" />
+                {formatDate(shift?.shift_date ?? '')} · Started {formatTime(shift?.login_time)}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => loadAll()}
+            title="Refresh"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0 mt-0.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              <path d="M8 16H3v5"/>
+            </svg>
+          </button>
         </div>
 
         {/* ── Balance summary strip ────────────────────────────────────── */}
@@ -345,12 +374,12 @@ export default function ShiftPage() {
             ) : (
               <div>
                 <p className="text-2xl font-bold text-emerald-800 tabular-nums">
-                  {shift?.opening_cash_in && Number(shift.opening_cash_in) > 0
+                  {shift?.opening_cash_in !== null && shift?.opening_cash_in !== undefined && Number(shift.opening_cash_in) >= 0
                     ? formatRupees(shift.opening_cash_in)
                     : <span className="text-gray-300">Not set</span>
                   }
                 </p>
-                {isActive && !shift?.opening_cash_in && (
+                {isActive && (shift?.opening_cash_in === null || shift?.opening_cash_in === undefined) && (
                   <button onClick={() => setCashInEditing(true)}
                     className="mt-2 text-xs text-emerald-600 hover:text-emerald-800 font-medium flex items-center gap-1">
                     <IconPlus size={12} /> Enter opening float

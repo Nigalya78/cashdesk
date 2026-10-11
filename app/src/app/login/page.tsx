@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { loginUser } from '@/lib/auth';
 import { getApiErrorMessage } from '@/lib/api';
@@ -58,8 +59,8 @@ export default function LoginPage() {
 
       {/* Brand */}
       <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-3">
-          <span className="text-white font-bold text-xl leading-none">₹</span>
+        <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 shadow-sm">
+          <Image src="/logo.png" alt="CashDesk" width={64} height={64} className="w-full h-full object-cover" priority />
         </div>
         <h1 className="text-xl font-bold text-gray-900">CashDesk</h1>
         <p className="text-sm text-gray-400 mt-1">Sign in to start your shift</p>

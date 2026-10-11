@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import CashierHeader from '@/components/cashier/CashierHeader';
 import { getMyShifts, getShiftEntries, getShiftCashOuts } from '@/lib/cashierApi';
@@ -28,7 +28,7 @@ export default function MyDataPage() {
   const [detailMap,  setDetailMap]  = useState<Record<string, ShiftDetail>>({});
   const [loadingId,  setLoadingId]  = useState<string | null>(null);
 
-  async function handleView() {
+  const handleView = useCallback(async () => {
     if (!fromDate || !toDate) { toast.error('Select both dates.'); return; }
     if (fromDate > toDate)    { toast.error('From date must be ≤ To date.'); return; }
     setLoading(true);
@@ -42,7 +42,10 @@ export default function MyDataPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [fromDate, toDate]);
+
+  // Auto-load today's data on mount
+  useEffect(() => { handleView(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function toggleShift(shiftId: string) {
     if (expandedId === shiftId) { setExpandedId(null); return; }

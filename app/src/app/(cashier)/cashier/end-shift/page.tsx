@@ -25,11 +25,17 @@ export default function EndShiftPage() {
   const [completed, setCompleted] = useState<Shift | null>(null);
 
   useEffect(() => {
-    getActiveShift().then((s) => {
-      if (!s) { toast.error('No active shift found.'); router.push('/cashier/shift'); return; }
-      setShift(s);
-      setLoading(false);
-    });
+    getActiveShift()
+      .then((s) => {
+        if (!s) { toast.error('No active shift found.'); router.push('/cashier/shift'); return; }
+        setShift(s);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        toast.error(getApiErrorMessage(err));
+        router.push('/cashier/shift');
+      });
   }, [router]);
 
   async function handleEnd() {
