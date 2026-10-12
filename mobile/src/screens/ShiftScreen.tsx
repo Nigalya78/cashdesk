@@ -374,6 +374,7 @@ export default function ShiftScreen({ navigation }: Props) {
             <Text style={s.sectionTitle}>Opening Balance</Text>
             <Text style={s.sectionSub}>  Opening float</Text>
           </View>
+          {cashInEditing ? (
             <View style={s.card}>
               <View style={s.amtRow}>
                 <Text style={s.rupeeSign}>₹</Text>
@@ -471,12 +472,6 @@ export default function ShiftScreen({ navigation }: Props) {
                 <View style={{ flex: 1 }}>
                   <Text style={[s.entryName, { color: '#dc2626' }]}>{formatRupees(co.amount)}</Text>
                   <Text style={s.entrySub}>{co.note}</Text>
-                </View>
-                <View style={s.actionRow}>
-                  <TouchableOpacity onPress={() => openEditCashOut(co)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="pencil-outline" size={18} color="#2563eb" />
-                  </TouchableOpacity>
                 </View>
               </View>
               {/* Returns */}
