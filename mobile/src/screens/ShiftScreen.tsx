@@ -374,8 +374,6 @@ export default function ShiftScreen({ navigation }: Props) {
             <Text style={s.sectionTitle}>Opening Balance</Text>
             <Text style={s.sectionSub}>  Opening float</Text>
           </View>
-
-          {cashInEditing ? (
             <View style={s.card}>
               <View style={s.amtRow}>
                 <Text style={s.rupeeSign}>₹</Text>
@@ -440,11 +438,6 @@ export default function ShiftScreen({ navigation }: Props) {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="pencil-outline" size={18} color="#2563eb" />
                   </TouchableOpacity>
-                  <View style={{ width: 14 }} />
-                  <TouchableOpacity onPress={() => handleDeleteEntry(entry.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="close-circle-outline" size={20} color="#ef4444" />
-                  </TouchableOpacity>
                 </View>
               </View>
               {entry.denominations.length > 0 && (
@@ -484,11 +477,6 @@ export default function ShiftScreen({ navigation }: Props) {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="pencil-outline" size={18} color="#2563eb" />
                   </TouchableOpacity>
-                  <View style={{ width: 14 }} />
-                  <TouchableOpacity onPress={() => handleDeleteCashOut(co.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="close-circle-outline" size={20} color="#ef4444" />
-                  </TouchableOpacity>
                 </View>
               </View>
               {/* Returns */}
@@ -496,10 +484,6 @@ export default function ShiftScreen({ navigation }: Props) {
                 <View key={r.id} style={s.returnRow}>
                   <Text style={s.returnAmt}>+{formatRupees(r.amount)}</Text>
                   {r.note ? <Text style={s.returnNote}>{r.note}</Text> : null}
-                  <TouchableOpacity onPress={() => handleDeleteReturn(r.id, co.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="close-circle-outline" size={16} color="#ef4444" />
-                  </TouchableOpacity>
                 </View>
               ))}
               {/* Add Return */}
