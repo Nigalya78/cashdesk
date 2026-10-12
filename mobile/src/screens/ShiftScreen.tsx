@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, ActivityIndicator, Modal, RefreshControl,
-  Dimensions,
+  Dimensions, KeyboardAvoidingView, Platform,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -505,14 +505,15 @@ export default function ShiftScreen({ navigation }: Props) {
 
       {/* ── Entry Modal ──────────────────────────────────────────────── */}
       <Modal visible={showEntryForm} animationType="slide" onRequestClose={() => setShowEntryForm(false)}>
-        <SafeAreaView style={s.safe}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => setShowEntryForm(false)}>
-              <Ionicons name="close" size={22} color="#6b7280" />
-            </TouchableOpacity>
-            <Text style={s.modalTitle}>{editingEntry ? 'Edit Entry' : 'New Entry'}</Text>
-            <View style={{ width: 32 }} />
-          </View>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <SafeAreaView style={s.safe}>
+            <View style={s.modalHeader}>
+              <TouchableOpacity onPress={() => setShowEntryForm(false)}>
+                <Ionicons name="close" size={22} color="#6b7280" />
+              </TouchableOpacity>
+              <Text style={s.modalTitle}>{editingEntry ? 'Edit Entry' : 'New Entry'}</Text>
+              <View style={{ width: 32 }} />
+            </View>
           <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={s.fieldLabel}>Entry Name *</Text>
             <TextInput style={s.textInput} value={entryName} onChangeText={setEntryName}
@@ -564,7 +565,8 @@ export default function ShiftScreen({ navigation }: Props) {
                 : <Text style={s.btnPrimaryText}>{editingEntry ? 'Update Entry' : 'Save Entry'}</Text>}
             </TouchableOpacity>
           </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ── Cash Out Modal ────────────────────────────────────────────── */}

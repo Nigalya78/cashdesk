@@ -33,6 +33,9 @@ const SUMMARY_SELECT = `
     + COALESCE((
       SELECT t_l.cash_in FROM transactions t_l WHERE t_l.shift_id = s.id ORDER BY t_l.created_at DESC LIMIT 1
     ), 0)
+    + COALESCE((
+      SELECT t_l.card_amount FROM transactions t_l WHERE t_l.shift_id = s.id ORDER BY t_l.created_at DESC LIMIT 1
+    ), 0)
     - COALESCE((
       SELECT SUM(co.amount) FROM cash_outs co WHERE co.shift_id = s.id
     ), 0)
