@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     requireRole(user, 'cashier');
     const shiftId = request.nextUrl.searchParams.get('shift_id');
     if (!shiftId) return NextResponse.json({ success: false, message: 'shift_id is required.' }, { status: 422 });
-    const returns = await getCashInReturnsForShift(shiftId);
+    const returns = await getCashInReturnsForShift(shiftId, user.userId);
     return NextResponse.json({ success: true, message: 'OK', data: returns });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to fetch cash in returns.';
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     if (!cash_out_id) return NextResponse.json({ success: false, message: 'cash_out_id is required.' }, { status: 422 });
     if (!shift_id) return NextResponse.json({ success: false, message: 'shift_id is required.' }, { status: 422 });
     if (typeof amount !== 'number' || amount <= 0) return NextResponse.json({ success: false, message: 'amount must be greater than 0.' }, { status: 422 });
+    if (!note || !note.trim()) return NextResponse.json({ success: false, message: 'note is required.' }, { status: 422 });
     const ret = await addCashInReturn(cash_out_id, shift_id, user.userId, Number(amount), note ?? '');
     return NextResponse.json({ success: true, message: 'Cash in return saved.', data: ret }, { status: 201 });
   } catch (err) {

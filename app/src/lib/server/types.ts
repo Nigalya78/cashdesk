@@ -51,7 +51,7 @@ export interface ShiftSummary extends Shift {
   total_cash_out: number;
   // sum of all cash in returns
   total_cash_in_returns: number;
-  // opening_cash_in + total_entries_cash - total_cash_out
+  // opening_cash_in + latest_entry_cash - total_cash_out + total_cash_in_returns
   cash_balance: number;
   entry_count: number;
   cash_out_count: number;

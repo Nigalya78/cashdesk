@@ -69,12 +69,16 @@ export async function deleteCashInReturn(
 }
 
 export async function getCashInReturnsForShift(
-  shiftId: string
+  shiftId: string,
+  cashierId: string
 ): Promise<CashInReturn[]> {
   await ensureMigrations();
   const result = await pool.query<CashInReturn>(
-    `SELECT * FROM cash_in_returns WHERE shift_id = $1 ORDER BY created_at ASC`,
-    [shiftId]
+    `SELECT cir.* FROM cash_in_returns cir
+     JOIN shifts s ON s.id = cir.shift_id
+     WHERE cir.shift_id = $1 AND cir.cashier_id = $2
+     ORDER BY cir.created_at ASC`,
+    [shiftId, cashierId]
   );
   return result.rows;
 }

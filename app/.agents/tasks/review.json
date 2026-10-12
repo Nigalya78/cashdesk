@@ -1,0 +1,10 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    "GET returns endpoint leaks cross-cashier data — getCashInReturnsForShift(shiftId) executes SELECT * FROM cash_in_returns WHERE shift_id = $1 with no cashier filter. The route calls requireRole(user, 'cashier') but never passes user.userId to the service. Any cashier can probe another cashier's return records. Add a cashier_id parameter and WHERE shift_id = $1 AND cashier_id = $2 clause, and thread user.userId through the route.",
+    "cash_balance comment is stale in both type files — app/src/lib/server/types.ts and app/src/types/index.ts both annotate cash_balance as 'opening_cash_in + total_entries_cash - total_cash_out', omitting the + cash_in_returns term added in this change. Update the comment in both files.",
+    "\"Cash In\" label ambiguity in dashboard — The fourth summary box is labelled \"Cash In\" on both web and mobile, but its value is total_cash_in_returns, not the opening float. A cashier sees \"Cash In\" in two places with different meanings. Consider \"Returns\" or \"Cash Returned\".",
+    "note validation gap in POST route — The cash-outs POST route returns 422 when note is blank. The cash-in-returns POST route passes note ?? '' to the service without an equivalent route-level 422 guard, creating an inconsistency with the established pattern."
+  ],
+  "reviewDoc": "e:\\work\\cashdesk\\app\\.agents\\tasks\\review-doc.md"
+}
