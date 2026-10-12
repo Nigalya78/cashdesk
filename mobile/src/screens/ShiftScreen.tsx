@@ -343,10 +343,10 @@ export default function ShiftScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* ── CASH IN ──────────────────────────────────────────────── */}
+        {/* ── OPENING BALANCE ──────────────────────────────────────── */}
         <View style={s.section}>
           <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Cash In</Text>
+            <Text style={s.sectionTitle}>Opening Balance</Text>
             <Text style={s.sectionSub}>  Opening float</Text>
           </View>
 
