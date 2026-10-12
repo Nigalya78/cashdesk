@@ -1,5 +1,5 @@
 import api from './api';
-import { ApiResponse, Shift, Entry, CashOut } from '../types';
+import { ApiResponse, Shift, Entry, CashOut, CashInReturn } from '../types';
 
 // ─── Shifts ───────────────────────────────────────────────────────────────────
 
@@ -94,5 +94,33 @@ export async function deleteCashOut(cashOutId: string): Promise<void> {
 
 export async function getShiftCashOuts(shiftId: string): Promise<CashOut[]> {
   const res = await api.get<ApiResponse<CashOut[]>>(`/cashier/shifts/${shiftId}/cash-outs`);
+  return res.data.data ?? [];
+}
+
+// ─── Cash In Returns ──────────────────────────────────────────────────────────
+
+export async function addCashInReturn(
+  cashOutId: string,
+  shiftId: string,
+  amount: number,
+  note: string,
+): Promise<CashInReturn> {
+  const res = await api.post<ApiResponse<CashInReturn>>('/cashier/cash-in-returns', {
+    cash_out_id: cashOutId,
+    shift_id: shiftId,
+    amount,
+    note,
+  });
+  return res.data.data!;
+}
+
+export async function deleteCashInReturn(id: string): Promise<void> {
+  await api.delete(`/cashier/cash-in-returns/${id}`);
+}
+
+export async function getCashInReturnsForShift(shiftId: string): Promise<CashInReturn[]> {
+  const res = await api.get<ApiResponse<CashInReturn[]>>('/cashier/cash-in-returns', {
+    params: { shift_id: shiftId },
+  });
   return res.data.data ?? [];
 }

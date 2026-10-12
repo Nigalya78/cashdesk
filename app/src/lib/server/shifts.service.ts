@@ -9,27 +9,42 @@ const SUMMARY_SELECT = `
     s.*,
     u.name        AS cashier_name,
     u.username    AS cashier_username,
-    -- sum of denomination totals from named entries
-    COALESCE(SUM(t.cash_in), 0)      AS total_entries_cash,
-    -- sum of card amounts from named entries
-    COALESCE(SUM(t.card_amount), 0)  AS total_card,
-    -- sum of all cash outs
+    COALESCE((
+      SELECT t_latest.cash_in
+      FROM transactions t_latest
+      WHERE t_latest.shift_id = s.id
+      ORDER BY t_latest.created_at DESC
+      LIMIT 1
+    ), 0) AS total_entries_cash,
+    COALESCE((
+      SELECT t_latest.card_amount
+      FROM transactions t_latest
+      WHERE t_latest.shift_id = s.id
+      ORDER BY t_latest.created_at DESC
+      LIMIT 1
+    ), 0) AS total_card,
     COALESCE((
       SELECT SUM(co.amount) FROM cash_outs co WHERE co.shift_id = s.id
-    ), 0)                            AS total_cash_out,
-    -- balance: opening float + entry cash - cash outs
+    ), 0) AS total_cash_out,
+    COALESCE((
+      SELECT SUM(cir.amount) FROM cash_in_returns cir WHERE cir.shift_id = s.id
+    ), 0) AS total_cash_in_returns,
     s.opening_cash_in
-    + COALESCE(SUM(t.cash_in), 0)
+    + COALESCE((
+      SELECT t_l.cash_in FROM transactions t_l WHERE t_l.shift_id = s.id ORDER BY t_l.created_at DESC LIMIT 1
+    ), 0)
     - COALESCE((
       SELECT SUM(co.amount) FROM cash_outs co WHERE co.shift_id = s.id
-    ), 0)                            AS cash_balance,
-    COUNT(t.id)                      AS entry_count,
+    ), 0)
+    + COALESCE((
+      SELECT SUM(cir.amount) FROM cash_in_returns cir WHERE cir.shift_id = s.id
+    ), 0) AS cash_balance,
+    (SELECT COUNT(*) FROM transactions WHERE shift_id = s.id) AS entry_count,
     COALESCE((
       SELECT COUNT(*) FROM cash_outs co WHERE co.shift_id = s.id
-    ), 0)                            AS cash_out_count
+    ), 0) AS cash_out_count
   FROM shifts s
   JOIN users u ON u.id = s.cashier_id
-  LEFT JOIN transactions t ON t.shift_id = s.id
 `;
 
 // ─── Cashier Operations ───────────────────────────────────────────────────────
@@ -65,7 +80,6 @@ export async function getActiveShift(cashierId: string): Promise<ShiftSummary | 
   const result = await pool.query<ShiftSummary>(
     `${SUMMARY_SELECT}
      WHERE s.cashier_id = $1 AND s.status = 'active'
-     GROUP BY s.id, u.name, u.username
      LIMIT 1`,
     [cashierId]
   );
@@ -104,7 +118,7 @@ export async function updateOpeningCashIn(
   }
 
   const result = await pool.query<ShiftSummary>(
-    `${SUMMARY_SELECT} WHERE s.id = $1 GROUP BY s.id, u.name, u.username`,
+    `${SUMMARY_SELECT} WHERE s.id = $1`,
     [shiftId]
   );
   return result.rows[0];
@@ -132,7 +146,7 @@ export async function endShift(shiftId: string, cashierId: string): Promise<Shif
   }
 
   const result = await pool.query<ShiftSummary>(
-    `${SUMMARY_SELECT} WHERE s.id = $1 GROUP BY s.id, u.name, u.username`,
+    `${SUMMARY_SELECT} WHERE s.id = $1`,
     [shiftId]
   );
   return result.rows[0];
@@ -149,7 +163,7 @@ export async function getCashierShifts(
   if (toDate)   { params.push(toDate);   where += ` AND s.shift_date <= $${params.length}`; }
 
   const result = await pool.query<ShiftSummary>(
-    `${SUMMARY_SELECT} ${where} GROUP BY s.id, u.name, u.username ORDER BY s.shift_date DESC, s.login_time DESC`,
+    `${SUMMARY_SELECT} ${where} ORDER BY s.shift_date DESC, s.login_time DESC`,
     params
   );
   return result.rows;
@@ -165,7 +179,7 @@ export async function getAllShifts(filter: ShiftFilter): Promise<ShiftSummary[]>
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const result = await pool.query<ShiftSummary>(
-    `${SUMMARY_SELECT} ${where} GROUP BY s.id, u.name, u.username ORDER BY s.shift_date DESC, s.login_time DESC`,
+    `${SUMMARY_SELECT} ${where} ORDER BY s.shift_date DESC, s.login_time DESC`,
     params
   );
   return result.rows;
@@ -173,7 +187,7 @@ export async function getAllShifts(filter: ShiftFilter): Promise<ShiftSummary[]>
 
 export async function getShiftById(shiftId: string): Promise<ShiftSummary | null> {
   const result = await pool.query<ShiftSummary>(
-    `${SUMMARY_SELECT} WHERE s.id = $1 GROUP BY s.id, u.name, u.username`,
+    `${SUMMARY_SELECT} WHERE s.id = $1`,
     [shiftId]
   );
   if (!result.rowCount || result.rowCount === 0) return null;

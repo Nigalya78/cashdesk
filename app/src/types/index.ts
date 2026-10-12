@@ -28,6 +28,7 @@ export interface Shift {
   total_card: number;
   // Computed from cash_outs table
   total_cash_out: number;
+  total_cash_in_returns: number;
   // opening_cash_in + total_entries_cash - total_cash_out
   cash_balance: number;
   entry_count: number;
@@ -60,6 +61,17 @@ export interface Entry {
 
 export interface CashOut {
   id: string;
+  shift_id: string;
+  cashier_id: string;
+  amount: number;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CashInReturn {
+  id: string;
+  cash_out_id: string;
   shift_id: string;
   cashier_id: string;
   amount: number;

@@ -49,6 +49,8 @@ export interface ShiftSummary extends Shift {
   total_card: number;
   // sum of all cash outs
   total_cash_out: number;
+  // sum of all cash in returns
+  total_cash_in_returns: number;
   // opening_cash_in + total_entries_cash - total_cash_out
   cash_balance: number;
   entry_count: number;
@@ -91,6 +93,18 @@ export interface TransactionDenomination {
 
 export interface CashOut {
   id: string;
+  shift_id: string;
+  cashier_id: string;
+  amount: number;
+  note: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ─── Cash In Return Types ─────────────────────────────────────────────────────
+export interface CashInReturn {
+  id: string;
+  cash_out_id: string;
   shift_id: string;
   cashier_id: string;
   amount: number;

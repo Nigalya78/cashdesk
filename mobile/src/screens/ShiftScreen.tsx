@@ -16,10 +16,11 @@ import {
   createEntry, updateEntry, deleteEntry,
   createCashOut, updateCashOut, deleteCashOut,
   updateCashIn, DenomInput,
+  addCashInReturn, deleteCashInReturn, getCashInReturnsForShift,
 } from '../services/cashierApi';
 import { getApiErrorMessage } from '../services/api';
 import { formatRupees, formatDate, formatTime, getGreeting, computeCashTotal, toNum } from '../utils/format';
-import { Entry, CashOut } from '../types';
+import { Entry, CashOut, CashInReturn } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
 type Props = StackScreenProps<RootStackParamList, 'Shift'>;
@@ -83,6 +84,12 @@ export default function ShiftScreen({ navigation }: Props) {
   const [cashOuts,   setCashOuts]   = useState<CashOut[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [cashInReturns,    setCashInReturns]    = useState<Record<string, CashInReturn[]>>({});
+  const [returnForCashOut, setReturnForCashOut] = useState<string | null>(null);
+  const [returnAmount,     setReturnAmount]     = useState('');
+  const [returnNote,       setReturnNote]       = useState('');
+  const [returnSaving,     setReturnSaving]     = useState(false);
+
   const [cashInEditing, setCashInEditing] = useState(false);
   const [cashInValue,   setCashInValue]   = useState('');
   const [cashInSaving,  setCashInSaving]  = useState(false);
@@ -114,6 +121,13 @@ export default function ShiftScreen({ navigation }: Props) {
     ]);
     setEntries(ent);
     setCashOuts(outs);
+    const returns = await getCashInReturnsForShift(activeShift.id);
+    const returnMap: Record<string, CashInReturn[]> = {};
+    returns.forEach((r) => {
+      if (!returnMap[r.cash_out_id]) returnMap[r.cash_out_id] = [];
+      returnMap[r.cash_out_id].push(r);
+    });
+    setCashInReturns(returnMap);
   }, [activeShift]);
 
   useEffect(() => {
@@ -247,6 +261,42 @@ export default function ShiftScreen({ navigation }: Props) {
     });
   }
 
+  async function handleSaveReturn() {
+    if (!activeShift || !returnForCashOut) return;
+    const amt = parseFloat(returnAmount);
+    if (isNaN(amt) || amt <= 0) { Alert.alert('Invalid', 'Enter a valid amount.'); return; }
+    setReturnSaving(true);
+    try {
+      const created = await addCashInReturn(returnForCashOut, activeShift.id, amt, returnNote.trim());
+      setCashInReturns((prev) => ({
+        ...prev,
+        [returnForCashOut]: [...(prev[returnForCashOut] ?? []), created],
+      }));
+      setReturnForCashOut(null);
+      setReturnAmount('');
+      setReturnNote('');
+      await refreshShift();
+    } catch (err) { Alert.alert('Error', getApiErrorMessage(err)); }
+    finally { setReturnSaving(false); }
+  }
+
+  function handleDeleteReturn(returnId: string, cashOutId: string) {
+    setConfirm({
+      message: 'Delete this cash in return?',
+      onConfirm: async () => {
+        setConfirm(null);
+        try {
+          await deleteCashInReturn(returnId);
+          setCashInReturns((prev) => ({
+            ...prev,
+            [cashOutId]: (prev[cashOutId] ?? []).filter((r) => r.id !== returnId),
+          }));
+          await refreshShift();
+        } catch (err) { Alert.alert('Error', getApiErrorMessage(err)); }
+      },
+    });
+  }
+
   if (!activeShift) {
     return (
       <SafeAreaView style={s.safe}>
@@ -254,8 +304,6 @@ export default function ShiftScreen({ navigation }: Props) {
       </SafeAreaView>
     );
   }
-
-  const totalCashIn = toNum(activeShift.opening_cash_in) + toNum(activeShift.total_entries_cash);
 
   return (
     <SafeAreaView style={s.safe} edges={['left', 'right', 'bottom']}>
@@ -284,11 +332,16 @@ export default function ShiftScreen({ navigation }: Props) {
         </View>
 
         <View style={s.balanceGrid}>
-          <BalBox label="Cash In"  value={formatRupees(totalCashIn)}                        color="#16a34a" />
-          <BalBox label="Cash Out" value={formatRupees(toNum(activeShift.total_cash_out))}  color="#dc2626" />
-          <BalBox label="Balance"  value={formatRupees(toNum(activeShift.cash_balance))}    color="#1d4ed8" />
-          <BalBox label="Card"     value={formatRupees(toNum(activeShift.total_card))}       color="#7c3aed" />
+          <BalBox label="Opening Balance"   value={formatRupees(toNum(activeShift.opening_cash_in))}      color="#16a34a" />
+          <BalBox label="Available Balance" value={formatRupees(toNum(activeShift.cash_balance))}         color="#1d4ed8" />
+          <BalBox label="Cash Out"          value={formatRupees(toNum(activeShift.total_cash_out))}       color="#dc2626" />
+          <BalBox label="Cash In"           value={formatRupees(toNum(activeShift.total_cash_in_returns))} color="#16a34a" />
         </View>
+        {toNum(activeShift.total_cash_out) > 0 && (
+          <View style={s.netBar}>
+            <Text style={s.netBarText}>Net Cash Out: {formatRupees(Math.max(0, toNum(activeShift.total_cash_out) - toNum(activeShift.total_cash_in_returns)))}</Text>
+          </View>
+        )}
 
         {/* ── CASH IN ──────────────────────────────────────────────── */}
         <View style={s.section}>
@@ -413,6 +466,25 @@ export default function ShiftScreen({ navigation }: Props) {
                   </TouchableOpacity>
                 </View>
               </View>
+              {/* Returns */}
+              {(cashInReturns[co.id] ?? []).map((r) => (
+                <View key={r.id} style={s.returnRow}>
+                  <Text style={s.returnAmt}>+{formatRupees(r.amount)}</Text>
+                  {r.note ? <Text style={s.returnNote}>{r.note}</Text> : null}
+                  <TouchableOpacity onPress={() => handleDeleteReturn(r.id, co.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close-circle-outline" size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {/* Add Return */}
+              <TouchableOpacity
+                style={s.addReturnBtn}
+                onPress={() => { setReturnForCashOut(co.id); setReturnAmount(''); setReturnNote(''); }}
+                activeOpacity={0.7}
+              >
+                <Text style={s.addReturnText}>+ Add Return</Text>
+              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -527,6 +599,37 @@ export default function ShiftScreen({ navigation }: Props) {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* ── Return Modal ─────────────────────────────────────────────────── */}
+      <Modal visible={!!returnForCashOut} animationType="slide" onRequestClose={() => setReturnForCashOut(null)}>
+        <SafeAreaView style={s.safe}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity onPress={() => setReturnForCashOut(null)}>
+              <Ionicons name="close" size={22} color="#6b7280" />
+            </TouchableOpacity>
+            <Text style={s.modalTitle}>Add Return</Text>
+            <View style={{ width: 32 }} />
+          </View>
+          <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
+            <Text style={s.fieldLabel}>Amount *</Text>
+            <View style={[s.amtRow, { marginBottom: 16 }]}>
+              <Text style={s.rupeeSign}>₹</Text>
+              <TextInput style={[s.amtInput, { flex: 1, fontSize: 28 }]}
+                value={returnAmount} onChangeText={setReturnAmount}
+                keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#d1d5db" autoFocus />
+            </View>
+            <Text style={s.fieldLabel}>Note</Text>
+            <TextInput style={s.textInput} value={returnNote} onChangeText={setReturnNote}
+              placeholder="Optional note…" placeholderTextColor="#9ca3af" />
+            <TouchableOpacity style={[s.btn, s.btnPrimary, { marginTop: 24 }]}
+              onPress={handleSaveReturn} disabled={returnSaving} activeOpacity={0.85}>
+              {returnSaving
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={s.btnPrimaryText}>Save Return</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -602,5 +705,14 @@ const s = StyleSheet.create({
   denomTotalRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#f0fdf4' },
   denomTotalLabel:{ fontSize: 13, fontWeight: '700', color: '#374151' },
   denomTotalValue:{ fontSize: 18, fontWeight: '800', color: '#111827' },
+
+  netBar:     { backgroundColor: '#f3f4f6', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  netBarText: { fontSize: 13, color: '#374151', fontWeight: '600' },
+
+  returnRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 },
+  returnAmt:    { fontSize: 13, fontWeight: '700', color: '#16a34a' },
+  returnNote:   { fontSize: 11, color: '#6b7280', flex: 1 },
+  addReturnBtn: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  addReturnText:{ fontSize: 12, color: '#16a34a', fontWeight: '600' },
 });
 

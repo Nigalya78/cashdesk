@@ -13,11 +13,12 @@ import {
   getActiveShift, updateCashIn,
   createEntry, updateEntry, deleteEntry, getShiftEntries,
   createCashOut, updateCashOut, deleteCashOut, getShiftCashOuts,
+  addCashInReturn, deleteCashInReturn, getCashInReturnsForShift,
   DenominationInput,
 } from '@/lib/cashierApi';
 import { getApiErrorMessage } from '@/lib/api';
 import { formatRupees, formatTime, formatDate } from '@/lib/format';
-import { Shift, Entry, CashOut } from '@/types';
+import { Shift, Entry, CashOut, CashInReturn } from '@/types';
 import {
   IconTrendingUp, IconTrendingDown, IconCreditCard,
   IconPlus, IconEdit, IconCheck, IconAlertTriangle,
@@ -67,6 +68,13 @@ export default function ShiftPage() {
   // ── Saved cash outs list ───────────────────────────────────────────────────
   const [cashOuts,       setCashOuts]       = useState<CashOut[]>([]);
 
+  // ── Cash In Returns state ──────────────────────────────────────────────────
+  const [cashInReturns,  setCashInReturns]  = useState<Record<string, CashInReturn[]>>({});
+  const [showReturnForm, setShowReturnForm] = useState<string | null>(null);
+  const [returnAmount,   setReturnAmount]   = useState('');
+  const [returnNote,     setReturnNote]     = useState('');
+  const [returnSaving,   setReturnSaving]   = useState(false);
+
   // ── Confirm modal ──────────────────────────────────────────────────────────
   const [confirmModal, setConfirmModal] = useState<{
     message: string;
@@ -90,6 +98,13 @@ export default function ShiftPage() {
       ]);
       setEntries(ent);
       setCashOuts(outs);
+      const returns = await getCashInReturnsForShift(s.id);
+      const returnMap: Record<string, CashInReturn[]> = {};
+      returns.forEach((r) => {
+        if (!returnMap[r.cash_out_id]) returnMap[r.cash_out_id] = [];
+        returnMap[r.cash_out_id].push(r);
+      });
+      setCashInReturns(returnMap);
     } catch (err) {
       setLoading(false);
       toast.error(getApiErrorMessage(err));
@@ -251,6 +266,50 @@ export default function ShiftPage() {
     });
   }
 
+  // ── Cash In Returns ────────────────────────────────────────────────────────
+  async function handleSaveReturn(cashOutId: string) {
+    if (!shift) return;
+    const amt = parseFloat(returnAmount);
+    if (isNaN(amt) || amt <= 0) { toast.error('Enter a valid amount.'); return; }
+    setReturnSaving(true);
+    try {
+      const created = await addCashInReturn(cashOutId, shift.id, amt, returnNote.trim());
+      setCashInReturns((prev) => ({
+        ...prev,
+        [cashOutId]: [...(prev[cashOutId] ?? []), created],
+      }));
+      setShowReturnForm(null);
+      setReturnAmount('');
+      setReturnNote('');
+      await refreshShift();
+      toast.success('Return added.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    } finally {
+      setReturnSaving(false);
+    }
+  }
+
+  async function handleDeleteReturn(returnId: string, cashOutId: string) {
+    setConfirmModal({
+      message: 'Delete this cash in return?',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await deleteCashInReturn(returnId);
+          setCashInReturns((prev) => ({
+            ...prev,
+            [cashOutId]: (prev[cashOutId] ?? []).filter((r) => r.id !== returnId),
+          }));
+          await refreshShift();
+          toast.success('Return deleted.');
+        } catch (err) {
+          toast.error(getApiErrorMessage(err));
+        }
+      },
+    });
+  }
+
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -320,12 +379,25 @@ export default function ShiftPage() {
         </div>
 
         {/* ── Balance summary strip ────────────────────────────────────── */}
+        {/* Dashboard: Row 1 */}
         <div className="grid grid-cols-2 gap-2">
-          <SummaryBox label="Cash In"  value={formatRupees(Number(shift?.opening_cash_in ?? 0) + Number(shift?.total_entries_cash ?? 0))} color="emerald" />
-          <SummaryBox label="Cash Out" value={formatRupees(shift?.total_cash_out ?? 0)} color="red" />
-          <SummaryBox label="Balance"  value={formatRupees(shift?.cash_balance ?? 0)}   color="blue" />
-          <SummaryBox label="Card"     value={formatRupees(shift?.total_card ?? 0)}     color="violet" />
+          <SummaryBox label="Opening Balance" value={formatRupees(shift?.opening_cash_in ?? 0)} color="emerald" />
+          <SummaryBox label="Available Balance" value={formatRupees(shift?.cash_balance ?? 0)} color="blue" />
         </div>
+        {/* Dashboard: Row 2 */}
+        <div className="grid grid-cols-2 gap-2">
+          <SummaryBox label="Cash Out" value={formatRupees(shift?.total_cash_out ?? 0)} color="red" />
+          <SummaryBox label="Cash In" value={formatRupees(shift?.total_cash_in_returns ?? 0)} color="emerald" />
+        </div>
+        {/* Dashboard: Row 3 — net bar (only when cash_out > 0) */}
+        {(shift?.total_cash_out ?? 0) > 0 && (
+          <div className="bg-gray-100 rounded-xl px-4 py-2 flex items-center justify-between">
+            <span className="text-xs text-gray-500 font-medium">Net Cash Out</span>
+            <span className="text-sm font-semibold text-gray-700 tabular-nums">
+              {formatRupees(Math.max(0, (shift?.total_cash_out ?? 0) - (shift?.total_cash_in_returns ?? 0)))}
+            </span>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════
             SECTION 1 — CASH IN (opening float, once per shift)
@@ -606,23 +678,66 @@ export default function ShiftPage() {
                 {cashOuts.length} cash {cashOuts.length !== 1 ? 'outs' : 'out'} · Total {formatRupees(cashOuts.reduce((s, c) => s + Number(c.amount), 0))}
               </p>
               {cashOuts.map((co) => (
-                <div key={co.id} className="card px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-red-600 tabular-nums">{formatRupees(co.amount)}</p>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">{co.note}</p>
+                <div key={co.id} className="card overflow-hidden">
+                  <div className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-red-600 tabular-nums">{formatRupees(co.amount)}</p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{co.note}</p>
+                    </div>
+                    {isActive && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={() => startEditCashOut(co)}
+                          className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
+                          title="Edit">
+                          <IconEdit size={13} />
+                        </button>
+                        <button onClick={() => handleDeleteCashOut(co.id)}
+                          className="text-red-400 hover:text-red-600 p-1 text-xs font-medium transition-colors"
+                          title="Delete">
+                          ✕
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  {/* Returns under this cash out */}
+                  {(cashInReturns[co.id] ?? []).length > 0 && (
+                    <div className="border-t border-gray-100 px-4 py-2 space-y-1 bg-emerald-50/40">
+                      {(cashInReturns[co.id] ?? []).map((r) => (
+                        <div key={r.id} className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-semibold text-emerald-700 tabular-nums">+{formatRupees(r.amount)}</span>
+                            {r.note && <span className="text-xs text-gray-400 ml-2">{r.note}</span>}
+                          </div>
+                          {isActive && (
+                            <button onClick={() => handleDeleteReturn(r.id, co.id)}
+                              className="text-red-400 hover:text-red-600 p-1 text-xs" title="Delete">✕</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Add Return form / button */}
                   {isActive && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => startEditCashOut(co)}
-                        className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
-                        title="Edit">
-                        <IconEdit size={13} />
-                      </button>
-                      <button onClick={() => handleDeleteCashOut(co.id)}
-                        className="text-red-400 hover:text-red-600 p-1 text-xs font-medium transition-colors"
-                        title="Delete">
-                        ✕
-                      </button>
+                    <div className="border-t border-gray-100 px-4 py-2">
+                      {showReturnForm === co.id ? (
+                        <div className="space-y-2 py-1">
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm pointer-events-none">₹</span>
+                            <DecimalInput min="0" value={returnAmount} onChange={(e) => setReturnAmount(e.target.value)} placeholder="0.00" className="input pl-7" autoFocus />
+                          </div>
+                          <input type="text" value={returnNote} onChange={(e) => setReturnNote(e.target.value)} placeholder="Note (optional)" className="input" maxLength={200} />
+                          <div className="flex gap-2">
+                            <button onClick={() => handleSaveReturn(co.id)} disabled={returnSaving} className="btn-sm btn-primary flex-1">
+                              {returnSaving ? <><span className="spinner" /> Saving…</> : 'Save Return'}
+                            </button>
+                            <button onClick={() => { setShowReturnForm(null); setReturnAmount(''); setReturnNote(''); }} className="btn-sm btn-secondary">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setShowReturnForm(co.id); setReturnAmount(''); setReturnNote(''); }} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium flex items-center gap-1">
+                          <IconPlus size={11} /> Add Return
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

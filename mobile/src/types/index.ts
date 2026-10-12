@@ -19,6 +19,7 @@ export interface Shift {
   total_entries_cash: number;
   total_card: number;
   total_cash_out: number;
+  total_cash_in_returns: number;
   cash_balance: number;
   entry_count: number;
   cash_out_count: number;
@@ -45,6 +46,16 @@ export interface Entry {
 export interface CashOut {
   id: string;
   shift_id: string;
+  amount: number;
+  note: string;
+  created_at: string;
+}
+
+export interface CashInReturn {
+  id: string;
+  cash_out_id: string;
+  shift_id: string;
+  cashier_id: string;
   amount: number;
   note: string;
   created_at: string;
