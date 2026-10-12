@@ -71,9 +71,23 @@ function BalBox({ label, value, color }: { label: string; value: string; color: 
   );
 }
 const bb = StyleSheet.create({
-  box:   { width: BOX_WIDTH, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', padding: 12, marginBottom: 8 },
+  box:   { flex: 1, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', padding: 12, marginBottom: 8 },
   label: { fontSize: 11, color: '#6b7280', marginBottom: 3 },
   value: { fontSize: 16, fontWeight: '800' },
+});
+
+function SmallBalBox({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <View style={sb.box}>
+      <Text style={sb.label}>{label}</Text>
+      <Text style={[sb.value, { color }]}>{value}</Text>
+    </View>
+  );
+}
+const sb = StyleSheet.create({
+  box:   { flex: 1, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', padding: 10, marginBottom: 4 },
+  label: { fontSize: 10, color: '#6b7280', marginBottom: 2 },
+  value: { fontSize: 13, fontWeight: '800' },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -331,12 +345,23 @@ export default function ShiftScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={s.balanceGrid}>
-          <BalBox label="Available Balance" value={formatRupees(toNum(activeShift.cash_balance))}          color="#1d4ed8" />
-          <BalBox label="Opening Balance"   value={formatRupees(toNum(activeShift.opening_cash_in))}       color="#16a34a" />
-          <BalBox label="Cash Out"          value={formatRupees(toNum(activeShift.total_cash_out))}        color="#dc2626" />
-          <BalBox label="Cash In"           value={formatRupees(toNum(activeShift.total_cash_in_returns))} color="#16a34a" />
+        {/* ── Balance Dashboard ─────────────────────────────────────── */}
+        {/* Row 1: Available Balance | Opening Balance */}
+        <View style={s.balRow}>
+          <BalBox label="Available Balance" value={formatRupees(toNum(activeShift.cash_balance))}    color="#1d4ed8" />
+          <BalBox label="Opening Balance"   value={formatRupees(toNum(activeShift.opening_cash_in))} color="#16a34a" />
         </View>
+
+        {/* Row 2: Entry Balance | Cash Out | Cash In */}
+        <View style={s.balRow}>
+          <BalBox label="Entry Balance" value={formatRupees(toNum(activeShift.total_entries_cash) + toNum(activeShift.total_card))} color="#0891b2" />
+          <View style={s.balSubCol}>
+            <SmallBalBox label="Cash Out" value={formatRupees(toNum(activeShift.total_cash_out))}        color="#dc2626" />
+            <SmallBalBox label="Cash In"  value={formatRupees(toNum(activeShift.total_cash_in_returns))} color="#16a34a" />
+          </View>
+        </View>
+
+        {/* Row 3: Net Cash Out (full width, only when cash out > 0) */}
         {toNum(activeShift.total_cash_out) > 0 && (
           <View style={s.netBar}>
             <Text style={s.netBarText}>Net Cash Out: {formatRupees(Math.max(0, toNum(activeShift.total_cash_out) - toNum(activeShift.total_cash_in_returns)))}</Text>
@@ -654,7 +679,8 @@ const s = StyleSheet.create({
   dot:         { width: 6, height: 6, borderRadius: 3, backgroundColor: '#16a34a', marginRight: 6 },
   pillText:    { fontSize: 11, fontWeight: '600', color: '#15803d' },
 
-  balanceGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 8 },
+  balRow:      { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  balSubCol:   { flex: 1, flexDirection: 'column', gap: 4 },
 
   section:       { marginBottom: 20 },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 10 },
