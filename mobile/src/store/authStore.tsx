@@ -3,7 +3,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import api, { TOKEN_KEY } from '../services/api';
 import { User, Shift, ApiResponse } from '../types';
-import { openShift, getActiveShift } from '../services/cashierApi';
+import { getActiveShift } from '../services/cashierApi';
 
 interface LoginResult {
   token: string;
@@ -37,19 +37,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!token) { setIsLoading(false); return; }
 
         // Token exists — verify it with a short timeout so startup is never blocked
-        const res = await api.get<ApiResponse<User>>('/auth/me', { timeout: 4000 });
-        if (res.data.success && res.data.data) {
-          setUser(res.data.data);
-          // Try to load active shift
-          const shift = await getActiveShift();
-          setActiveShift(shift);
-        } else {
-          // Token invalid — clear it
-          await SecureStore.deleteItemAsync(TOKEN_KEY);
+        try {
+          const res = await api.get<ApiResponse<User>>('/auth/me', { timeout: 4000 });
+          if (res.data.success && res.data.data) {
+            setUser(res.data.data);
+            // Try to load active shift
+            const shift = await getActiveShift();
+            setActiveShift(shift);
+          } else {
+            // Server returned a non-success response — token is invalid, clear it
+            await SecureStore.deleteItemAsync(TOKEN_KEY);
+          }
+        } catch (err: unknown) {
+          // Only delete the token on an explicit 401/403 — keep it on network errors
+          const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+          if (status === 401 || status === 403) {
+            try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch {}
+          }
+          // Network error: leave token intact; user stays authenticated-but-offline
+          // (isAuthenticated stays false since user is null, but token is preserved)
         }
       } catch {
-        // Network error or invalid token — clear and show login immediately
-        try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch {}
+        // Unexpected error reading from SecureStore — do not clear token
       } finally {
         setIsLoading(false);
       }
@@ -72,24 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await SecureStore.setItemAsync(TOKEN_KEY, data.token);
     setUser(data.user);
-
-    // Start or resume shift
-    try {
-      const shift = await openShift();
-      setActiveShift(shift);
-    } catch (err: unknown) {
-      // Extract backend message from axios 400 response body, fallback to err.message
-      let msg = err instanceof Error ? err.message : '';
-      if (axios.isAxiosError(err)) {
-        msg = err.response?.data?.message || err.response?.data?.error || msg;
-      }
-      if (msg.toLowerCase().includes('already have an active shift')) {
-        const existing = await getActiveShift();
-        setActiveShift(existing);
-      } else {
-        console.warn('Could not open shift:', msg);
-      }
-    }
+    // Do NOT open a shift here — the StartShift screen handles that
   }, []);
 
   // ── Logout ────────────────────────────────────────────────────────────────

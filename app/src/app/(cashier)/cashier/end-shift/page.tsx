@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 import CashierHeader from '@/components/cashier/CashierHeader';
 import { getActiveShift, endShift } from '@/lib/cashierApi';
 import { getApiErrorMessage } from '@/lib/api';
-import { logout } from '@/lib/auth';
 import { formatRupees, formatTime, formatDate } from '@/lib/format';
 import { Shift } from '@/types';
 import {
@@ -52,8 +51,7 @@ export default function EndShiftPage() {
   }
 
   function handleFinish() {
-    logout();
-    router.push('/login');
+    router.push('/cashier/start-shift');
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -171,7 +169,7 @@ export default function EndShiftPage() {
         <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <IconAlertTriangle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-800 leading-relaxed">
-            Ending your shift will <strong>log you out</strong> and lock all entries.
+            Ending your shift will <strong>lock all entries</strong>.
             This cannot be undone.
           </p>
         </div>
@@ -184,7 +182,7 @@ export default function EndShiftPage() {
           <button onClick={handleEnd} disabled={step === 'ending'} className="c-btn-danger">
             {step === 'ending'
               ? <><span className="spinner !border-white/30 !border-t-white" /> Ending Shift…</>
-              : 'End Shift & Log Out'
+              : 'End Shift'
             }
           </button>
           <button onClick={() => router.push('/cashier/shift')}

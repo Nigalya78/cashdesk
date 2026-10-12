@@ -79,7 +79,7 @@ export default function ShiftPage() {
   const loadAll = useCallback(async () => {
     try {
       const s = await getActiveShift();
-      if (!s) { router.push('/login'); return; }
+      if (!s) { router.push('/cashier/start-shift'); return; }
       setShift(s);
       setCashInAmount(s.opening_cash_in !== null && s.opening_cash_in !== undefined ? String(s.opening_cash_in) : '');
       setLoading(false);

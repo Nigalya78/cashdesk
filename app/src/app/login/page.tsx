@@ -6,7 +6,6 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { loginUser } from '@/lib/auth';
 import { getApiErrorMessage } from '@/lib/api';
-import api from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,20 +30,8 @@ export default function LoginPage() {
         return;
       }
 
-      // 2. Start shift (or resume existing one)
-      setStatus('Starting shift…');
-      try {
-        await api.post('/cashier/shifts');
-      } catch (shiftErr) {
-        // "already have an active shift" → fine, just resume
-        const msg = getApiErrorMessage(shiftErr);
-        if (!msg.toLowerCase().includes('already have an active shift')) {
-          throw shiftErr; // unexpected error — rethrow
-        }
-      }
-
-      // 3. Go straight to shift page
-      router.push('/cashier/shift');
+      // 2. Go to start-shift page (which handles opening or resuming a shift)
+      router.push('/cashier/start-shift');
     } catch (err) {
       toast.error(getApiErrorMessage(err));
       setStatus('');

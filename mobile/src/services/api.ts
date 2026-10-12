@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_URL = (process as NodeJS.Process).env.EXPO_PUBLIC_API_URL || 'https://cashdesk-eight.vercel.app/api';
 export const TOKEN_KEY = 'cashdesk_jwt';
 
 const api = axios.create({

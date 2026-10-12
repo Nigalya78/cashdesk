@@ -32,9 +32,9 @@ export function middleware(req: NextRequest) {
 
   const role = decodeJwtRole(token);
 
-  // Already logged in — skip login page, go to shift page
+  // Already logged in — skip login page, go to start-shift page
   if (isLoginPage) {
-    return NextResponse.redirect(new URL('/cashier/shift', req.url));
+    return NextResponse.redirect(new URL('/cashier/start-shift', req.url));
   }
 
   // Only cashier role is valid in this app

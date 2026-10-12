@@ -49,3 +49,12 @@ export function formatTime(isoStr: string | null | undefined): string {
 export function toInputDate(dateStr: string): string {
   return dateStr || '';
 }
+
+/**
+ * Time-based greeting: "Good morning/afternoon/evening, Name"
+ */
+export function getGreeting(name: string): string {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  return `${g}, ${name}`;
+}

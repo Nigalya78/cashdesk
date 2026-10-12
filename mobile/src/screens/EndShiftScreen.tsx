@@ -17,7 +17,7 @@ type Props = StackScreenProps<RootStackParamList, 'EndShift'>;
 type Step  = 'confirm' | 'ending' | 'done';
 
 export default function EndShiftScreen({ navigation }: Props) {
-  const { activeShift, logout } = useAuth();
+  const { activeShift, setActiveShift } = useAuth();
   const [step,      setStep]      = useState<Step>('confirm');
   const [completed, setCompleted] = useState<Shift | null>(null);
 
@@ -35,7 +35,7 @@ export default function EndShiftScreen({ navigation }: Props) {
   }
 
   async function handleFinish() {
-    await logout();
+    setActiveShift(null);
   }
 
   // ── Ending ────────────────────────────────────────────────────────────────
@@ -144,15 +144,15 @@ export default function EndShiftScreen({ navigation }: Props) {
         <View style={s.warning}>
           <Ionicons name="warning-outline" size={18} color="#92400e" style={{ marginRight: 8, marginTop: 1 }} />
           <Text style={s.warningText}>
-            Ending your shift will <Text style={{ fontWeight: '700' }}>log you out</Text> and
-            lock all entries. This cannot be undone.
+            Ending your shift will <Text style={{ fontWeight: '700' }}>lock all entries</Text>.
+            This cannot be undone.
           </Text>
         </View>
 
         <Text style={s.confirmQuestion}>Are you sure you want to end your shift?</Text>
 
         <TouchableOpacity style={s.endBtn} onPress={handleEnd} activeOpacity={0.85}>
-          <Text style={s.endBtnText}>End Shift & Log Out</Text>
+          <Text style={s.endBtnText}>End Shift</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={s.cancelBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>

@@ -4,24 +4,26 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../store/authStore';
 
-import LoginScreen    from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
-import ShiftScreen    from '../screens/ShiftScreen';
-import MyDataScreen   from '../screens/MyDataScreen';
-import EndShiftScreen from '../screens/EndShiftScreen';
+import LoginScreen      from '../screens/LoginScreen';
+import RegisterScreen   from '../screens/RegisterScreen';
+import StartShiftScreen from '../screens/StartShiftScreen';
+import ShiftScreen      from '../screens/ShiftScreen';
+import MyDataScreen     from '../screens/MyDataScreen';
+import EndShiftScreen   from '../screens/EndShiftScreen';
 
 export type RootStackParamList = {
-  Login:    undefined;
-  Register: undefined;
-  Shift:    undefined;
-  MyData:   undefined;
-  EndShift: undefined;
+  Login:      undefined;
+  Register:   undefined;
+  StartShift: undefined;
+  Shift:      undefined;
+  MyData:     undefined;
+  EndShift:   undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, activeShift } = useAuth();
 
   // Show spinner while restoring session from SecureStore
   if (isLoading) {
@@ -55,7 +57,22 @@ export default function AppNavigator() {
               options={{ title: 'Create Account', headerBackTitle: 'Back' }}
             />
           </>
+        ) : activeShift === null ? (
+          // Authenticated but no active shift → StartShift is root
+          <>
+            <Stack.Screen
+              name="StartShift"
+              component={StartShiftScreen}
+              options={{ headerShown: false, gestureEnabled: false }}
+            />
+            <Stack.Screen
+              name="MyData"
+              component={MyDataScreen}
+              options={{ title: 'My Data' }}
+            />
+          </>
         ) : (
+          // Authenticated + active shift → Shift is root
           <>
             <Stack.Screen
               name="Shift"

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView,
-  Platform, ScrollView,
+  Platform, ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -57,9 +57,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
           {/* Brand */}
           <View style={s.brand}>
-            <View style={s.logoBox}>
-              <Ionicons name="cash-outline" size={32} color="#fff" />
-            </View>
+            <Image source={require('../../assets/logo.png')} style={s.logoBox} resizeMode="contain" />
             <Text style={s.appName}>CashDesk</Text>
             <Text style={s.tagline}>Create your cashier account</Text>
           </View>
@@ -167,7 +165,7 @@ const s = StyleSheet.create({
   flex:       { flex: 1 },
   inner:      { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   brand:      { alignItems: 'center', marginBottom: 32 },
-  logoBox:    { width: 64, height: 64, borderRadius: 18, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  logoBox:    { width: 80, height: 80, marginBottom: 14 },
   appName:    { fontSize: 24, fontWeight: '800', color: '#111827' },
   tagline:    { fontSize: 14, color: '#6b7280', marginTop: 4 },
   card:       { width: '100%', maxWidth: 420, alignSelf: 'center', backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: '#e5e7eb', padding: 20, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
