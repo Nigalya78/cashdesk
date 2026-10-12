@@ -505,8 +505,8 @@ export default function ShiftScreen({ navigation }: Props) {
 
       {/* ── Entry Modal ──────────────────────────────────────────────── */}
       <Modal visible={showEntryForm} animationType="slide" onRequestClose={() => setShowEntryForm(false)}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <SafeAreaView style={s.safe}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
             <View style={s.modalHeader}>
               <TouchableOpacity onPress={() => setShowEntryForm(false)}>
                 <Ionicons name="close" size={22} color="#6b7280" />
@@ -514,7 +514,13 @@ export default function ShiftScreen({ navigation }: Props) {
               <Text style={s.modalTitle}>{editingEntry ? 'Edit Entry' : 'New Entry'}</Text>
               <View style={{ width: 32 }} />
             </View>
-          <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={s.scroll}
+            contentContainerStyle={[s.modalContent, { paddingBottom: 120 }]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={s.fieldLabel}>Entry Name *</Text>
             <TextInput style={s.textInput} value={entryName} onChangeText={setEntryName}
               placeholder="e.g. Morning Sales, Counter 1…" placeholderTextColor="#9ca3af" />
