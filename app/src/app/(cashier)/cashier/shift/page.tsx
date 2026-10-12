@@ -381,8 +381,8 @@ export default function ShiftPage() {
         {/* ── Balance summary strip ────────────────────────────────────── */}
         {/* Dashboard: Row 1 */}
         <div className="grid grid-cols-2 gap-2">
-          <SummaryBox label="Opening Balance" value={formatRupees(shift?.opening_cash_in ?? 0)} color="emerald" />
           <SummaryBox label="Available Balance" value={formatRupees(shift?.cash_balance ?? 0)} color="blue" />
+          <SummaryBox label="Opening Balance" value={formatRupees(shift?.opening_cash_in ?? 0)} color="emerald" />
         </div>
         {/* Dashboard: Row 2 */}
         <div className="grid grid-cols-2 gap-2">

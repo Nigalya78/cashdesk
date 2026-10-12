@@ -332,9 +332,9 @@ export default function ShiftScreen({ navigation }: Props) {
         </View>
 
         <View style={s.balanceGrid}>
-          <BalBox label="Opening Balance"   value={formatRupees(toNum(activeShift.opening_cash_in))}      color="#16a34a" />
-          <BalBox label="Available Balance" value={formatRupees(toNum(activeShift.cash_balance))}         color="#1d4ed8" />
-          <BalBox label="Cash Out"          value={formatRupees(toNum(activeShift.total_cash_out))}       color="#dc2626" />
+          <BalBox label="Available Balance" value={formatRupees(toNum(activeShift.cash_balance))}          color="#1d4ed8" />
+          <BalBox label="Opening Balance"   value={formatRupees(toNum(activeShift.opening_cash_in))}       color="#16a34a" />
+          <BalBox label="Cash Out"          value={formatRupees(toNum(activeShift.total_cash_out))}        color="#dc2626" />
           <BalBox label="Cash In"           value={formatRupees(toNum(activeShift.total_cash_in_returns))} color="#16a34a" />
         </View>
         {toNum(activeShift.total_cash_out) > 0 && (
